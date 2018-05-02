@@ -4,7 +4,7 @@ from scipy.stats import kurtosis, skew
 
 
 def read_data():
-    input_file = open("/home/hardit/Desktop/yoyData.csv", "rb")
+    input_file = open("msci.csv", "rb")
     reader = csv.reader(input_file)
 
     data = []
