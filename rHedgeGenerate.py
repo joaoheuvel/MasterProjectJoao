@@ -1,5 +1,9 @@
 import csv
+import math
+import numpy as np
 import statsmodels.api as sm
+from scipy.stats import kurtosis, skew
+import pandas as pd
 
 
 def calc_rhedge():
@@ -7,10 +11,16 @@ def calc_rhedge():
 
     w_hedge = []
     r_hedge = []
+    skewness_data = []
+    kurtosis_data = []
+    sharpe = []
 
     for j in range(0, r_cf.__len__()):
         w_hedge.append([])
         r_hedge.append([])
+        skewness_data.append([])
+        kurtosis_data.append([])
+        sharpe.append([])
 
     interval = 60
 
@@ -20,6 +30,10 @@ def calc_rhedge():
             x = r_cf[i][month-interval-1:month-1]
             y = r_msci[month-interval-1:month-1]
 
+            skewness_data[i].append(skew(x))
+            kurtosis_data[i].append(kurtosis(x))
+            sharpe[i].append((math.sqrt(interval) * (np.mean(x) / np.std(x))))
+
             model = sm.OLS(y, x).fit()
             w_hedge_val = -model.params
             r_hedge_val = r_msci[month] + (w_hedge_val)*r_cf[i][month]
@@ -27,26 +41,21 @@ def calc_rhedge():
             w_hedge[i].append(w_hedge_val)
             r_hedge[i].append(r_hedge_val)
 
-    write_csv(currencies, w_hedge, r_hedge)
+    write_csv(currencies, w_hedge, r_hedge, skewness_data, kurtosis_data, sharpe)
     print("Total currencies: %d" % (i + 1))
     print("Total months: %d" % (month - interval))
 
 
-def write_csv(currencies, w_hedge, r_hedge):
-    output_file = open("hedged_data.csv", "w", encoding="utf8")
+def write_csv(currencies, w_hedge, r_hedge, skewness_data, kurtosis_data, sharpe):
+
 
     for i in range(0, currencies.__len__()):
-        if i == currencies.__len__()-1:
-            output_file.write("%s w_hedge, %s r_hedge\n" % (currencies[i], currencies[i]))
-        else:
-            output_file.write("%s w_hedge, %s r_hedge, " % (currencies[i], currencies[i]))
+        output_file = open("output/%s_hedged_data.csv" % currencies[i], "w", encoding="utf8")
+        output_file.write("w_hedge, r_hedge, skewness, kurtosis, sharpe\n")
 
-    for i in range(0, w_hedge[0].__len__()):
-        for j in range(0, w_hedge.__len__()):
-            if j == w_hedge.__len__()-1:
-                output_file.write("%f, %f\n" % (w_hedge[j][i], r_hedge[j][i]))
-            else:
-                output_file.write("%f, %f, " % (w_hedge[j][i], r_hedge[j][i]))
+        for j in range(0, w_hedge[0].__len__()):
+            output_file.write("%f, %f, %f, %f, %f\n" % (w_hedge[i][j], r_hedge[i][j], skewness_data[i][j], kurtosis_data[i][j], sharpe[i][j]))
+
 
     output_file.close()
 
